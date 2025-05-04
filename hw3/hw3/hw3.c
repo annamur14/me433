@@ -24,6 +24,13 @@ void init_usb_port()
     printf("Start!\n");
 }
 
+void init_adc()
+{
+    adc_init();
+    adc_gpio_init(26);
+    adc_select_input(0);
+}
+
 void poll_button()
 {
     if (gpio_get(BUTTON_PIN))
@@ -34,7 +41,9 @@ void poll_button()
     else
     {
         gpio_put(LED_PIN, 0);
-        printf("LED ON\n");
+        // printf("LED ON\n");
+        uint16_t result = adc_read();
+        printf("ADC result: %d\n", result);
     }
 }
 
@@ -42,6 +51,7 @@ int main()
 {
     init_usb_port();
     init_gpios();
+    init_adc();
 
     while (1)
     {
