@@ -5,6 +5,8 @@
 #define LED_PIN 15
 #define BUTTON_PIN 2
 
+// uint8_t num_samples;
+
 void init_gpios()
 {
     gpio_init(15);
@@ -31,34 +33,45 @@ void init_adc()
     adc_select_input(0);
 }
 
-void poll_button()
-{
-    if (gpio_get(BUTTON_PIN))
-    {
-        gpio_put(LED_PIN, 1);
-        printf("LED OFF\n");
-    }
-    else
-    {
-        gpio_put(LED_PIN, 0);
-        // printf("LED ON\n");
-        uint16_t result = adc_read();
-        printf("ADC result: %d\n", result);
-    }
-}
-
-int main()
+void init()
 {
     init_usb_port();
     init_gpios();
     init_adc();
 
+    gpio_put(LED_PIN, 0);
+    while (gpio_get(BUTTON_PIN))
+    { // unpressed
+        gpio_put(LED_PIN, 1);
+        printf("LED off, in init\n");
+        // sleep_ms(100);
+    }
+}
+
+int main()
+{
+    init();
+
     while (1)
     {
-        poll_button();
-        // char message[100];
-        // scanf("%s", message);
-        // printf("message: %s\r\n", message);
-        // sleep_ms(50);
+        int num_samples = 0;
+        printf("\nEnter number of analog samples to take (1-100): ");
+        scanf("%d", &num_samples);
+        // read_adc();
+        // printf("in read_adc\n");
+        float adc_samples[num_samples];
+        for (int i = 0; i < num_samples; i++)
+        {
+            // printf("in read_adc for loop\n");
+            uint16_t result = adc_read();
+            float voltage = (result * 3.3f) / 4095.0f;
+            adc_samples[i] = voltage;
+            sleep_ms(10);
+        }
+        for (int i = 0; i < num_samples; i++)
+        {
+            printf("\nADC0 voltage %d: %f V", i, adc_samples[i]);
+        }
+        // sleep_ms(1000);
     }
 }
