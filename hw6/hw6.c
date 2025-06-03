@@ -3,134 +3,84 @@
 #include "hardware/i2c.h"
 
 // I2C defines
+
 #define I2C_PORT i2c0
-#define I2C_SDA 0
-#define I2C_SCL 1
+#define I2C_SDA 4
+#define I2C_SCL 5
+#define MCP_ADDR 0b100000
 
-// MCP23008 defines
-#define MCP23008_ADDR 0b100000 // Address with A0, A1, A2 connected to GND
-#define IODIR 0x00             // I/O Direction register
-#define GPIO 0x09              // GPIO Port register (read pin values)
-#define OLAT 0x0A              // Output Latch register (set output pins)
+#define IODIR 0x00
+#define IPOL 0x01
+#define GPINTEN 0x02
+#define DEFVAL 0x03
+#define INTCON 0x04
+#define IOCON 0x05
+#define GPPU 0x06
+#define INTF 0x07
+#define INTCAP 0x08
+#define GPIO 0x09
+#define OLAT 0x0A
 
-// Pico built-in LED
-#define LED_PIN 25
+#define ONBOARD_LED 25
 
-// Function prototypes
-void setPin(uint8_t address, uint8_t reg, uint8_t value);
-uint8_t readPin(uint8_t address, uint8_t reg);
-void init_mcp23008(void);
+void heartbeat(void);
 
-void init_usb_port()
+void write_pin(uint8_t pin, bool val)
 {
-    stdio_init_all();
-    while (!stdio_usb_connected())
-    {
-        sleep_ms(100);
-    }
-    printf("Start!\n");
+    printf("Writing pin %d with value %d\n", pin, val);
+    uint8_t buf[2] = {GPIO, val << (pin)};
+    i2c_write_blocking(I2C_PORT, MCP_ADDR, buf, 2, false);
+}
+
+uint8_t read_pin(uint8_t pin)
+{
+    printf("Reading pin %d\n", pin);
+    uint8_t buf;
+    uint8_t reg = GPIO;
+
+    i2c_write_blocking(I2C_PORT, MCP_ADDR, &reg, 1, true);
+    i2c_read_blocking(I2C_PORT, MCP_ADDR, &buf, 1, false);
+
+    return buf & (1 << pin);
 }
 
 int main()
 {
-    init_usb_port();
-    printf("hello\n");
+    stdio_init_all();
 
-    // I2C Initialization at 400KHz
+    // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400 * 1000);
 
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
-    // gpio_pull_up(I2C_SDA);
-    // gpio_pull_up(I2C_SCL);
+    gpio_pull_up(I2C_SDA);
+    gpio_pull_up(I2C_SCL);
+    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
 
-    // Initialize built-in LED for heartbeat
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_init(ONBOARD_LED);
+    gpio_set_dir(ONBOARD_LED, GPIO_OUT);
 
-    // Initialize the MCP23008 chip
-    init_mcp23008();
-
-    printf("MCP23008 I/O expander example started\n");
-
-    // Variables for heartbeat and button state
-    bool heartbeat = false;
-    bool prev_button_state = false;
+    uint8_t buf[2] = {IODIR, 0b01111111};
+    i2c_write_blocking(I2C_PORT, MCP_ADDR, buf, 2, false);
 
     while (true)
     {
-        // Toggle heartbeat LED
-        heartbeat = !heartbeat;
-        gpio_put(LED_PIN, heartbeat);
-
-        // Read button state from GP0
-        uint8_t gpio_value = readPin(MCP23008_ADDR, GPIO);
-        bool button_pressed = !(gpio_value & 0x01); // GP0 is active low with pull-up
-
-        // Control LED on GP7 based on button state
-        uint8_t olat_value = readPin(MCP23008_ADDR, OLAT);
-
-        if (button_pressed)
-        {
-            // Turn ON GP7 (set bit 7)
-            setPin(MCP23008_ADDR, OLAT, olat_value | (1 << 7));
-        }
-        else
-        {
-            // Turn OFF GP7 (clear bit 7)
-            setPin(MCP23008_ADDR, OLAT, olat_value & ~(1 << 7));
-        }
-
-        // Print state changes
-        if (button_pressed != prev_button_state)
-        {
-            printf("Button %s, LED %s\n",
-                   button_pressed ? "PRESSED" : "UNPRESSED",
-                   button_pressed ? "OFF" : "ON");
-            prev_button_state = button_pressed;
-        }
-
-        // Heartbeat indicator
-        if (heartbeat)
-        {
-            printf("♥\n");
-        }
-
-        sleep_ms(250); // Blink frequency for heartbeat
+        heartbeat();
+        sleep_ms(5);
+        write_pin(7, !read_pin(0));
     }
 }
 
-// Initialize the MCP23008
-void init_mcp23008(void)
+void heartbeat()
 {
-    // Configure GP7 as output (0) and all other pins as inputs (1)
-    // IODIR: 0 = output, 1 = input
-    // 0x7F = 0b01111111 (GP7=output, GP0-GP6=inputs)
-    setPin(MCP23008_ADDR, IODIR, 0x7F);
-
-    // Initialize output latch - all pins off
-    setPin(MCP23008_ADDR, OLAT, 0x00);
-
-    printf("MCP23008 initialized\n");
-}
-
-// Write a value to a register
-void setPin(uint8_t address, uint8_t reg, uint8_t value)
-{
-    uint8_t data[2] = {reg, value};
-    i2c_write_blocking(I2C_PORT, address, data, 2, false);
-}
-
-// Read a value from a register
-uint8_t readPin(uint8_t address, uint8_t reg)
-{
-    uint8_t result;
-
-    // First write the register we want to read
-    i2c_write_blocking(I2C_PORT, address, &reg, 1, true); // true to keep control of bus
-
-    // Then read from that register
-    i2c_read_blocking(I2C_PORT, address, &result, 1, false);
-
-    return result;
+    static uint16_t i = 0;
+    i = (i + 1) % 100;
+    if (i == 0)
+    {
+        gpio_put(ONBOARD_LED, 0);
+    }
+    else if (i == 50)
+    {
+        gpio_put(ONBOARD_LED, 1);
+    }
 }
