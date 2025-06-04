@@ -35,18 +35,18 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(hw12 hw12.c )
+add_executable(hw12 hw12.c cam.h cam.c ov7670.h)
 
 pico_set_program_name(hw12 "hw12")
 pico_set_program_version(hw12 "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(hw12 0)
-pico_enable_stdio_usb(hw12 0)
+pico_enable_stdio_usb(hw12 1)
 
 # Add the standard library to the build
 target_link_libraries(hw12
-        pico_stdlib)
+        pico_stdlib hardware_i2c hardware_pwm)
 
 # Add the standard include files to the build
 target_include_directories(hw12 PRIVATE
