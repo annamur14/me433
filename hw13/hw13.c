@@ -50,6 +50,20 @@ void draw_char(char c, int x, int y)
     }
 }
 
+void draw_string(char *str, int x, int y)
+{
+    while (*str)
+    {
+        draw_char(*str++, x, y);
+        x += 6; // Move to the next character position (5 pixels + 1 pixel space)
+    }
+}
+
+float adc_to_volts(uint16_t adc_value)
+{
+    return (adc_value * 3.3f) / 4095.0f;
+}
+
 int main()
 {
     stdio_init_all();
@@ -68,18 +82,28 @@ int main()
 
     ssd1306_setup();
     sleep_ms(100);
+    ssd1306_clear();
 
     adc_init();
     adc_gpio_init(ADC0_PIN);
     adc_select_input(ADC0);
 
+    char str[50];
+    char fps_str[20];
+
+    uint32_t prev_time = 0;
+    uint32_t current_time = 0;
+
     while (true)
     {
         heartbeat();
 
-        draw_char('H', 0, 0);
-        sleep(100);
-        draw_char('e', 0, 8);
+        sprintf(str, "ADC0: %f V", adc_to_volts(adc_read()));
+        draw_string(str, 0, 0);
+
+        current_time = to_ms_since_boot(get_absolute_time());
+        sprintf(fps_str, "FPS: %d", 1000000 / (current_time - prev_time));
+        draw_string(fps_str, 0, 8);
 
         ssd1306_update();
     }

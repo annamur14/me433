@@ -1,4 +1,4 @@
-// Padded and checksummed version of: /Users/anna/Documents/s25/me433/me433/hw7/build/pico-sdk/src/rp2350/boot_stage2/bs2_default.bin
+// Padded and checksummed version of: /Users/anna/Documents/s25/me433/me433/HW07/build/pico-sdk/src/rp2350/boot_stage2/bs2_default.bin
 
 .cpu cortex-m0plus
 .thumb
