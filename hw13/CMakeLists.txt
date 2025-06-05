@@ -28,36 +28,36 @@ set(PICO_BOARD pico2 CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(HW07 C CXX ASM)
+project(hw13 C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(HW07 HW07.c ssd1306.c)
+add_executable(hw13 hw13.c ssd1306.c ssd1306.h)
 
-pico_set_program_name(HW07 "HW07")
-pico_set_program_version(HW07 "0.1")
+pico_set_program_name(hw13 "hw13")
+pico_set_program_version(hw13 "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(HW07 0)
-pico_enable_stdio_usb(HW07 1)
+pico_enable_stdio_uart(hw13 0)
+pico_enable_stdio_usb(hw13 1)
 
 # Add the standard library to the build
-target_link_libraries(HW07
-        pico_stdlib hardware_adc)
+target_link_libraries(hw13
+        pico_stdlib hardware_i2c)
 
 # Add the standard include files to the build
-target_include_directories(HW07 PRIVATE
+target_include_directories(hw13 PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
 # Add any user requested libraries
-target_link_libraries(HW07 
+target_link_libraries(hw13 
         hardware_i2c
         hardware_adc
         )
 
-pico_add_extra_outputs(HW07)
+pico_add_extra_outputs(hw13)
 
