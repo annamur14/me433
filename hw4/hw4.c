@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include <math.h>
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -65,8 +66,21 @@ int main()
 
     while (true)
     {
-        send_data(0, 0.5f); // Channel 0, 0.5V
-        send_data(1, 2.0f); // Channel 1, 2.0V
+        // send_data(0, 0.5f); // Channel 0, 0.5V
+        // send_data(1, 2.0f); // Channel 1, 2.0V
+        float value = 0.0f;
+        float time = 0.0f;
+        for (int i = 0; i < 200; i++)
+        {
+            value = 1.65 * sin(2 * time * 2.0f * M_PI) + 1.65;
+            send_data(0, value);
+            value = fabs(3.3 * (fmod(2 * time, 2) - 1));
+            send_data(1, value);
+
+            time += 0.002;
+
+            sleep_ms(2);
+        }
 
         sleep_ms(10);
     }
